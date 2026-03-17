@@ -27,13 +27,7 @@ class HTMLNode:
             return f"<{self.tag}{self.props_to_html()}>{children_html}</{self.tag}>"
 
         value = self.value if self.value is not None else ""
-        value = (
-            value.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&#39;")
-        )
+        value = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         return f"<{self.tag}{self.props_to_html()}>{value}</{self.tag}>"
 
     def props_to_html(self) -> str:

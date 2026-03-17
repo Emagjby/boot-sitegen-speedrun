@@ -7,10 +7,10 @@ def text_to_children(text: str) -> list[HTMLNode]:
     text_nodes = text_to_textnodes(text)
     children = [text_node_to_html_node(node) for node in text_nodes]
     for child in children:
-        if child.tag == "b":
-            child.tag = "strong"
-        elif child.tag == "i":
-            child.tag = "em"
+        if child.tag == "strong":
+            child.tag = "b"
+        elif child.tag == "em":
+            child.tag = "i"
     return children
 
 
@@ -81,4 +81,12 @@ def block_to_html_node(block: str) -> HTMLNode:
 def markdown_to_html_node(markdown: str) -> HTMLNode:
     blocks = markdown_to_blocks(markdown)
     children = [block_to_html_node(block) for block in blocks]
-    return HTMLNode(tag=None, children=children)
+    return HTMLNode(tag="div", children=children)
+
+
+def extract_title(markdown: str) -> str:
+    for line in markdown.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+
+    raise ValueError("No title found in markdown")

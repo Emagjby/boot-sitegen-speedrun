@@ -1,72 +1,92 @@
-from extractor import extract_markdown_images
-from htmlnode import HTMLNode
-from leafnode import LeafNode
-from parentnode import ParentNode
-from splitter import (
-    split_nodes_delimiter,
-    split_nodes_images,
-    split_nodes_links,
-    text_to_textnodes,
-)
-from textnode import TextNode, TextType
+import os
+import shutil
 
-node = TextNode("Hello, World!", TextType.BOLD_TEXT)
-node2 = TextNode("Hello, World!", TextType.BOLD_TEXT, "https://example.com")
-html_node = HTMLNode("div", None, None, {"class": "my-div"})
-html_node_2 = HTMLNode("div", None, [html_node], {"class": "my-div"})
-leaf_node = LeafNode("span", "This is a leaf node", {"class": "leaf-node"})
-parent_node = ParentNode(
-    "p",
-    [
-        LeafNode("b", "Bold text"),
-        LeafNode(None, "Normal text"),
-        LeafNode("i", "italic text"),
-        LeafNode(None, "Normal text"),
-    ],
-)
+from markdown_to_html import extract_title, markdown_to_html_node
 
-splitter_1_node = TextNode("This is text with a `code block` word", TextType.TEXT)
-splitter_1_new_nodes = split_nodes_delimiter([splitter_1_node], "`", TextType.CODE_TEXT)
 
-splitter_2_node = TextNode(
-    "This is a link to [Google](https://www.google.com) and [GitHub](https://www.github.com)",
-    TextType.TEXT,
-)
-splitter_2_new_nodes = split_nodes_images([splitter_2_node])
+def generate_page(
+    from_path: str, template_path: str, dest_path: str, root: str
+) -> None:
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
-splitter_3_node = TextNode(
-    "This is a link to [Google](https://www.google.com) and ![Image](https://example.com/image.png)",
-    TextType.TEXT,
-)
-splitter_3_new_nodes = split_nodes_images([splitter_3_node])
-splitter_3_new_nodes = split_nodes_links([*splitter_3_new_nodes])
+    with open(from_path, "r") as from_file:
+        markdown = from_file.read()
 
-text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
-formatted = text_to_textnodes(text)
+    with open(template_path, "r") as template_file:
+        template = template_file.read()
 
-print(node)
-print(node2)
-print(html_node)
-print(html_node_2)
-print(leaf_node)
-print(parent_node)
-print(parent_node.to_html())
+    content = markdown_to_html_node(markdown).to_html()
+    title = extract_title(markdown)
 
-print("---------------------\n\n")
-
-print(splitter_1_new_nodes)
-print(splitter_2_new_nodes)
-print(splitter_3_new_nodes)
-
-print("---------------------\n\n")
-
-print(
-    extract_markdown_images(
-        "![Image](https://example.com/image.png) Some text ![Another Image](https://example.com/another-image.png)"
+    full = (
+        template.replace("{{ Title }}", title)
+        .replace("{{ Content }}", content)
+        .replace('href="/', f'href="{root}')
+        .replace('src="/', f'src="{root}')
     )
-)
 
-print("---------------------\n\n")
+    dest_dir = os.path.dirname(dest_path)
+    if dest_dir and not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
 
-print(text)
-print(formatted)
+    with open(dest_path, "w") as dest_file:
+        _ = dest_file.write(full)
+
+
+def copy_static(src: str, dst: str) -> None:
+    if os.path.exists(dst):
+        shutil.rmtree(dst)
+
+    os.mkdir(dst)
+
+    copy_recursive(src, dst)
+
+
+def copy_recursive(src: str, dst: str) -> None:
+    for item in os.listdir(src):
+        src_path = os.path.join(src, item)
+        dst_path = os.path.join(dst, item)
+
+        if os.path.isfile(src_path):
+            print(f"Copying file: {src_path} -> {dst_path}")
+            _ = shutil.copy2(src_path, dst_path)
+        else:
+            print(f"Creating directory: {dst_path}")
+            os.makedirs(dst_path, exist_ok=True)
+            copy_recursive(src_path, dst_path)
+
+
+def generate_pages(
+    dir_path_content: str, template_path: str, dest_dir_path: str, root: str = "/"
+) -> None:
+    if not os.path.exists(dest_dir_path):
+        os.makedirs(dest_dir_path)
+
+    for item in os.listdir(dir_path_content):
+        src_path = os.path.join(dir_path_content, item)
+        dst_path = os.path.join(dest_dir_path, item)
+
+        if os.path.isfile(src_path) and src_path.endswith(".md"):
+            print(f"Generating page: {src_path} -> {dst_path.replace('.md', '.html')}")
+            generate_page(
+                src_path, template_path, dst_path.replace(".md", ".html"), root
+            )
+        elif os.path.isdir(src_path):
+            print(f"Processing directory: {src_path}")
+            generate_pages(src_path, template_path, dst_path)
+
+
+# main takes arg basepath
+def main() -> None:
+    base_path = os.getcwd()
+    copy_static(os.path.join(base_path, "static"), os.path.join(base_path, "docs"))
+    generate_pages(
+        os.path.join(base_path, "content"),
+        os.path.join(base_path, "template.html"),
+        os.path.join(base_path, "docs"),
+        root=base_path,
+    )
+
+
+if __name__ == "__main__":
+    main()

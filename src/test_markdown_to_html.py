@@ -1,6 +1,6 @@
 import unittest
 
-from markdown_to_html import markdown_to_html_node
+from markdown_to_html import extract_title, markdown_to_html_node
 
 
 class TestMarkdownToHtml(unittest.TestCase):
@@ -18,7 +18,7 @@ This is another paragraph with *italic* text and `code`.
         html = node.to_html()
         self.assertEqual(
             html,
-            "<p>This is <strong>bold</strong> text text is a p tag here</p><p>This is another paragraph with <em>italic</em> text and <code>code</code>.</p>",
+            "<div><p>This is <strong>bold</strong> text text is a p tag here</p><p>This is another paragraph with <em>italic</em> text and <code>code</code>.</p></div>",
         )
 
     def test_headings(self):
@@ -27,7 +27,7 @@ This is another paragraph with *italic* text and `code`.
         html = node.to_html()
         self.assertEqual(
             html,
-            "<h1>Heading 1</h1>",
+            "<div><h1>Heading 1</h1></div>",
         )
 
         md = "## Heading 2"
@@ -35,7 +35,7 @@ This is another paragraph with *italic* text and `code`.
         html = node.to_html()
         self.assertEqual(
             html,
-            "<h2>Heading 2</h2>",
+            "<div><h2>Heading 2</h2></div>",
         )
 
         md = "### Heading 3"
@@ -43,7 +43,7 @@ This is another paragraph with *italic* text and `code`.
         html = node.to_html()
         self.assertEqual(
             html,
-            "<h3>Heading 3</h3>",
+            "<div><h3>Heading 3</h3></div>",
         )
 
     def test_blockquotes(self):
@@ -52,7 +52,7 @@ This is another paragraph with *italic* text and `code`.
         html = node.to_html()
         self.assertEqual(
             html,
-            "<blockquote>This is a blockquote</blockquote>",
+            "<div><blockquote>This is a blockquote</blockquote></div>",
         )
 
     def test_code_blocks(self):
@@ -64,7 +64,7 @@ def hello():
         html = node.to_html()
         self.assertEqual(
             html,
-            "<pre><code>def hello():\n    print(&quot;Hello, World!&quot;)</code></pre>",
+            "<div><pre><code>def hello():\n    print(&quot;Hello, World!&quot;)</code></pre></div>",
         )
 
     def test_lists(self):
@@ -75,7 +75,7 @@ def hello():
         html = node.to_html()
         self.assertEqual(
             html,
-            "<ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul>",
+            "<div><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul></div>",
         )
 
         md = """1. First
@@ -85,8 +85,21 @@ def hello():
         html = node.to_html()
         self.assertEqual(
             html,
-            "<ol><li>First</li><li>Second</li><li>Third</li></ol>",
+            "<div><ol><li>First</li><li>Second</li><li>Third</li></ol></div>",
         )
+
+    def test_extract_title(self):
+        md = "# My Title"
+        self.assertEqual(extract_title(md), "My Title")
+
+    def test_extract_title_with_spaces(self):
+        md = "#    My Title     "
+        self.assertEqual(extract_title(md), "My Title")
+
+    def test_extract_title_raises_with_no_title(self):
+        md = "This is not a title"
+        with self.assertRaises(ValueError):
+            extract_title(md)
 
 
 if __name__ == "__main__":

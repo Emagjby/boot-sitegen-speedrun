@@ -1,4 +1,4 @@
-from extractor import extract_markdown_links
+from extractor import extract_markdown_images, extract_markdown_links
 from textnode import TextNode, TextType
 
 
@@ -73,7 +73,7 @@ def split_nodes_images(old_nodes: list[TextNode]) -> list[TextNode]:
             new_nodes.append(node)
             continue
 
-        images: list[str] = extract_markdown_links(node.text)
+        images: list[str] = extract_markdown_images(node.text)
 
         if not images:
             new_nodes.append(node)
