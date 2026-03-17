@@ -1,6 +1,7 @@
 import unittest
 
 from splitter import (
+    markdown_to_blocks,
     split_nodes_delimiter,
     split_nodes_images,
     split_nodes_links,
@@ -342,6 +343,43 @@ class TestSplitter(unittest.TestCase):
         text = "This is **bold text with unmatched *italic delimiters."
         with self.assertRaises(ValueError):
             text_to_textnodes(text)
+
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_markdown_to_blocks_empty_lines(self):
+        md = """
+This is a paragraph with empty lines before and after.
+        """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks, ["This is a paragraph with empty lines before and after."]
+        )
+
+    def test_markdown_to_blocks_only_empty_lines(self):
+        md = """
+
+
+        """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(blocks, [])
 
 
 if __name__ == "__main__":
